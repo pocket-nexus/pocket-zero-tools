@@ -1,0 +1,23 @@
+{
+  "name": "pocket-zero-tools",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Tools: a launcher of hardware tools for the M5Stack CardputerZero, built with PocketJS",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pocket-nexus/pocket-zero-tools.git"
+  },
+  "scripts": {
+    "setup": "git submodule update --init && bun install --cwd vendor/pocketjs --frozen-lockfile && bun scripts/setup.ts",
+    "build": "bun scripts/zero.ts build",
+    "deb": "bun scripts/zero.ts deb",
+    "install-zero": "bun scripts/zero.ts install",
+    "shot": "bun scripts/zero.ts shot",
+    "tour": "bun scripts/zero.ts tour",
+    "media": "bun scripts/zero.ts media",
+    "check": "bun scripts/zero.ts check",
+    "test": "bun test tests"
+  }
+}
