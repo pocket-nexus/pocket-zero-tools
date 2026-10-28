@@ -18,6 +18,6 @@
     "tour": "bun scripts/zero.ts tour",
     "media": "bun scripts/zero.ts media",
     "check": "bun scripts/zero.ts check",
-    "test": "bun test tests"
+    "test": "bun test ./tests"
   }
 }

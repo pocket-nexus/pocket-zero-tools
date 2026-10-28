@@ -6,7 +6,7 @@ The Store takes a `.deb` and the listing in `app-builder.json`; `czdev publish` 
 
 | Item | Where | Rule it meets |
 | --- | --- | --- |
-| Package | `.build/pocket-zero-tools_0.2.0-1_arm64.deb` (`bun scripts/zero.ts deb`) | `<package>_<version>-<revision>_arm64.deb`; a `.desktop` entry; no systemd service; the launcher starts it as `pi` |
+| Package | `.build/pocket-zero-tools_0.2.0-2_arm64.deb` (`bun scripts/zero.ts deb`) | `<package>_<version>-<revision>_arm64.deb`; a `.desktop` entry; no systemd service; no udev rule that runs a command; the launcher starts it as `pi` |
 | Title | `app_name`: Tools | unique in the Store (no listed app uses it on 2026-10-28) |
 | Package name | `pocket-zero-tools` | lowercase Debian name; fixed after the first publish |
 | Summary | 80 characters, with zh-CN and ja translations | at most 80 characters |
@@ -19,7 +19,7 @@ The Store takes a `.deb` and the listing in `app-builder.json`; `czdev publish` 
 | Author | display name Pocket Nexus; `czdev` records the GitHub login that publishes | `display_name` required |
 | Maintainer field | `Pocket Nexus <7312949+doodlewind@users.noreply.github.com>` | not a template default |
 
-`bun scripts/zero.ts check` runs the Store's own `store_meta_policy.py` on this listing (title and share-code uniqueness are checked by the Store's CI against the whole catalogue).
+`bun scripts/zero.ts check` runs the Store's own `store_meta_policy.py` on this listing and `install_path_policy.py` on the `.deb` (with `dpkg-deb`; `brew install dpkg` on macOS). Title and share-code uniqueness are checked by the Store's CI against the whole catalogue.
 
 ## The video
 
@@ -41,7 +41,7 @@ The Store asks for **the app launching, its main features, and the app exiting**
 git clone https://github.com/CardputerZero/AppBuilder ~/code/AppBuilder
 ~/code/AppBuilder/czdev login                                   # GitHub device code
 bun scripts/zero.ts check                                        # the Store's metadata policy, locally
-~/code/AppBuilder/czdev publish --deb .build/pocket-zero-tools_0.2.0-1_arm64.deb
+~/code/AppBuilder/czdev publish --deb .build/pocket-zero-tools_0.2.0-2_arm64.deb
 ```
 
 Run `czdev publish` from this repository's root, where `app-builder.json` is. It forks CardputerZero/packages under the logged-in account, uploads the `.deb` to that fork's `czdev-buffer` release, and opens the pull request. Post the video as a comment on it.

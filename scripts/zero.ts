@@ -2,12 +2,12 @@
 // Tools for the M5Stack CardputerZero: build, package, install and shoot.
 //
 //   bun scripts/zero.ts build            the program for aarch64, the package and the icons -> .build/
-//   bun scripts/zero.ts deb              .build/pocket-zero-tools_<version>-1_arm64.deb, the Store's package
+//   bun scripts/zero.ts deb              .build/pocket-zero-tools_<version>-<revision>_arm64.deb, the Store's package
 //   bun scripts/zero.ts install <host>   the .deb over SSH (root@<address>) with dpkg, then APPLaunch restarts
 //   bun scripts/zero.ts shot --script "<tick>:<event> ..." [--out <dir>]
 //   bun scripts/zero.ts tour [--out <dir>]
 //   bun scripts/zero.ts media            docs/media/*.gif and store/screenshots/*.png from the mock device
-//   bun scripts/zero.ts check            app-builder.json against the CardputerZero Store's own policy script
+//   bun scripts/zero.ts check            app-builder.json and the .deb against the CardputerZero Store's own policy scripts
 //
 // build    the profile of pocketjs programs/cardputer-zero, this app's package
 //          compiled against it, and the program for aarch64 Linux against
@@ -17,8 +17,8 @@
 // deb      the package as the CardputerZero Store installs it: the program at
 //          /usr/share/APPLaunch/bin/pocket-zero-tools, the package beside its
 //          share directory, the launcher entry "Tools" with its icon, and a
-//          udev rule that gives the CMA heap the names rpicam-apps opens. The
-//          launcher starts it as `pi`; nothing runs as root.
+//          tmpfiles.d entry that gives the CMA heap the names rpicam-apps
+//          opens. The launcher starts it as `pi`; nothing runs as root.
 // shot     the program built for this computer, without the panel and the
 //          keyboard, answering the device API from the mock: each `shot`
 //          event of the script becomes <out>/<tick>.png, 2x. Events are
@@ -47,7 +47,7 @@ if (builder.version !== manifest.version) throw new Error(`app-builder.json is $
 
 const NAME = builder.package_name;
 const VERSION = builder.version;
-const REVISION = "1";
+const REVISION = "2";
 const MAINTAINER = "Pocket Nexus <7312949+doodlewind@users.noreply.github.com>";
 const CONFIG = "programs/cardputer-zero/pocket.runtime-config.ts";
 const TARGET = "aarch64-unknown-linux-gnu";
@@ -70,13 +70,25 @@ Terminal=false
 `;
 // rpicam-apps allocates its capture buffers from /dev/dma_heap/linux,cma (or
 // vidbuf_cached); the Zero's kernel names its CMA heap default_cma_region.
-// udev replaces the comma in a SYMLINK name, so that one is made by a command.
-const UDEV = `SUBSYSTEM=="dma_heap", KERNEL=="default_cma_region", SYMLINK+="dma_heap/vidbuf_cached", RUN+="/bin/ln -sf default_cma_region /dev/dma_heap/linux,cma"\n`;
-const UDEV_RELOAD = `#!/bin/sh
+// systemd-tmpfiles makes the two links at boot, and postinst makes them on
+// install. (A udev rule cannot: udev replaces the comma in a SYMLINK name, and
+// the Store rejects udev rules that RUN a command.)
+const TMPFILES = `/usr/lib/tmpfiles.d/${NAME}.conf`;
+const HEAP_LINKS = ["/dev/dma_heap/linux,cma", "/dev/dma_heap/vidbuf_cached"];
+const HEAP_TMPFILES = HEAP_LINKS.map(link => `L ${link} - - - - default_cma_region\n`).join("");
+const POSTINST = `#!/bin/sh
 set -e
-if command -v udevadm >/dev/null 2>&1; then
-  udevadm control --reload-rules || true
-  udevadm trigger --subsystem-match=dma_heap || true
+if [ "$1" = configure ] && command -v systemd-tmpfiles >/dev/null 2>&1; then
+  systemd-tmpfiles --create ${TMPFILES} || true
+fi
+exit 0
+`;
+const POSTRM = `#!/bin/sh
+set -e
+if [ "$1" = remove ] || [ "$1" = purge ]; then
+  for link in ${HEAP_LINKS.map(link => `"${link}"`).join(" ")}; do
+    if [ -L "$link" ] && [ "$(readlink "$link")" = default_cma_region ]; then rm -f "$link"; fi
+  done
 fi
 exit 0
 `;
@@ -121,7 +133,7 @@ async function makeDeb(): Promise<string> {
   put(INSTALLED_POCKET, readFileSync(POCKET));
   put(`${PREFIX}/share/images/${NAME}.png`, readFileSync(join(BUILD, `${NAME}.png`)));
   put(`${PREFIX}/applications/${NAME}.desktop`, DESKTOP);
-  put(`/usr/lib/udev/rules.d/99-${NAME}-camera.rules`, UDEV);
+  put(TMPFILES, HEAP_TMPFILES);
   put(`/usr/share/doc/${NAME}/copyright`, `${builder.app_name} (${NAME})\nSource: ${builder.store.source_repo}\nLicense: ${builder.store.license}\n\n${readFileSync(join(ROOT, "LICENSE"), "utf8")}`);
   const data = walk(stage, path => path === BINARY.slice(1));
   const installedKiB = Math.ceil(data.reduce((sum, entry) => sum + (entry.data?.length ?? 0), 0) / 1024);
@@ -139,7 +151,7 @@ Description: ${builder.app_name} for the M5Stack CardputerZero
  .
  Built with PocketJS: https://github.com/pocket-nexus/pocketjs
 `;
-  const bytes = deb({ control, postinst: UDEV_RELOAD, postrm: UDEV_RELOAD }, ["postinst", "postrm"], data, Math.floor(Date.now() / 1000));
+  const bytes = deb({ control, postinst: POSTINST, postrm: POSTRM }, ["postinst", "postrm"], data, Math.floor(Date.now() / 1000));
   writeFileSync(debPath(), bytes);
   console.log(`zero: ${debPath()} (${(bytes.length / 1024).toFixed(0)} KiB)`);
   return debPath();
@@ -285,8 +297,9 @@ async function media(): Promise<void> {
   }
 }
 
-/** The Store's own policy script (CardputerZero/packages), run on the
- *  meta.json czdev would publish from app-builder.json. */
+/** The Store's own policy scripts (CardputerZero/packages), run on the
+ *  meta.json czdev would publish from app-builder.json and on the .deb's
+ *  install paths (this one needs dpkg-deb). */
 async function check(): Promise<void> {
   const stage = join(BUILD, "check", NAME);
   rmSync(join(BUILD, "check"), { recursive: true, force: true });
@@ -301,17 +314,31 @@ async function check(): Promise<void> {
   writeFileSync(join(stage, "meta.json"), JSON.stringify(meta, null, 2));
   copyFileSync(join(ROOT, store.icon), join(stage, basename(store.icon)));
   for (const path of store.screenshots) copyFileSync(join(ROOT, path), join(stage, "screenshots", basename(path)));
-  const script = join(BUILD, "check", "store_meta_policy.py");
-  await $`curl -sfL -m 20 https://raw.githubusercontent.com/CardputerZero/packages/main/.github/scripts/store_meta_policy.py -o ${script}`;
+  const policy = async (name: string) => {
+    const script = join(BUILD, "check", name);
+    await $`curl -sfL -m 20 https://raw.githubusercontent.com/CardputerZero/packages/main/.github/scripts/${name} -o ${script}`;
+    return script;
+  };
   const errors = join(BUILD, "check", "errors.txt");
   const warnings = join(BUILD, "check", "warnings.txt");
-  await $`python3 ${script} ${NAME} ${stage} - ${errors} ${warnings}`.env({ ...process.env, DEB_MAINTAINER: MAINTAINER });
+  await $`python3 ${await policy("store_meta_policy.py")} ${NAME} ${stage} - ${errors} ${warnings}`.env({ ...process.env, DEB_MAINTAINER: MAINTAINER });
   if (existsSync(warnings)) for (const line of readFileSync(warnings, "utf8").trim().split("\n")) console.log(`  warning: ${line}`);
   if (existsSync(errors)) {
     for (const line of readFileSync(errors, "utf8").trim().split("\n")) console.error(`  error: ${line}`);
     process.exit(1);
   }
   console.log("zero: app-builder.json passes the Store's metadata policy (name and share code uniqueness are checked by the Store)");
+  if (!existsSync(debPath())) {
+    console.log(`zero: no ${basename(debPath())} yet; \`bun scripts/zero.ts deb\` builds it, and check then judges its install paths`);
+    return;
+  }
+  const rejected = join(BUILD, "check", "bad-paths.txt");
+  await $`python3 ${await policy("install_path_policy.py")} ${NAME} ${debPath()} ${rejected}`;
+  if (existsSync(rejected)) {
+    for (const line of readFileSync(rejected, "utf8").trim().split("\n")) console.error(`  error: ${line}`);
+    process.exit(1);
+  }
+  console.log(`zero: ${basename(debPath())} passes the Store's install path policy`);
 }
 
 switch (argv[0]) {

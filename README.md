@@ -55,7 +55,7 @@ One vocabulary on every screen (`docs/DESIGN.md`):
 | `/usr/share/APPLaunch/bin/pocket-zero-tools` | the PocketJS CardputerZero program (pocketjs `programs/cardputer-zero`) |
 | `/usr/share/APPLaunch/share/pocket-zero-tools/pocket-zero-tools.pocket` | this app, compiled for the program's profile |
 | `/usr/share/APPLaunch/applications/pocket-zero-tools.desktop`, `share/images/pocket-zero-tools.png` | the launcher entry and its icon |
-| `/usr/lib/udev/rules.d/99-pocket-zero-tools-camera.rules` | the CMA heap names rpicam-apps opens (`/dev/dma_heap/linux,cma`, `vidbuf_cached`); the Zero's kernel names it `default_cma_region` |
+| `/usr/lib/tmpfiles.d/pocket-zero-tools.conf` | the CMA heap names rpicam-apps opens (`/dev/dma_heap/linux,cma`, `vidbuf_cached`) as links to `default_cma_region`, the Zero kernel's name; systemd-tmpfiles makes them at boot |
 
 **The launcher starts Tools as `pi`; nothing runs as root.** Its files (the compass calibration, learned IR keys, recordings, photos, the counter) live in `~/.config/pocket-zero-tools/`.
 
@@ -71,7 +71,7 @@ bun scripts/zero.ts deb                    # .build/pocket-zero-tools_<version>-
 bun scripts/zero.ts install root@<address> # the .deb over SSH with dpkg, then APPLaunch restarts
 bun scripts/zero.ts tour                   # one shot of every tool, rendered on this computer
 bun scripts/zero.ts shot --script "40:shot 42:key:Tab 50:shot"
-bun test                                   # the calculator's parser and the worker records
+bun run test                               # the calculator's parser and the worker records
 ```
 
 `vendor/pocketjs` pins the PocketJS commit the app is built against; `POCKETJS=<checkout>` builds against another.
@@ -88,7 +88,7 @@ bun test                                   # the calculator's parser and the wor
 
 ## The CardputerZero Store
 
-`app-builder.json` carries the Store listing (title, summary, icon, screenshots, categories, permissions, share code). `bun scripts/zero.ts check` runs the Store's own metadata policy script on it, and `czdev publish --deb .build/pocket-zero-tools_<version>-1_arm64.deb` (from [CardputerZero/AppBuilder](https://github.com/CardputerZero/AppBuilder)) opens the listing's pull request on CardputerZero/packages. A first listing needs a video of the app on the device in that pull request.
+`app-builder.json` carries the Store listing (title, summary, icon, screenshots, categories, permissions, share code). `bun scripts/zero.ts check` runs the Store's own policy scripts on it and on the `.deb`'s install paths, and `czdev publish --deb .build/pocket-zero-tools_<version>-1_arm64.deb` (from [CardputerZero/AppBuilder](https://github.com/CardputerZero/AppBuilder)) opens the listing's pull request on CardputerZero/packages. A first listing needs a video of the app on the device in that pull request.
 
 ## License
 
