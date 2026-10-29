@@ -1,7 +1,7 @@
 {
   "app_name": "Tools",
   "package_name": "pocket-zero-tools",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "bin_name": "pocket-zero-tools",
   "description": "Level, IR remote, audio, radio, camera, clock, calculator and more",
 

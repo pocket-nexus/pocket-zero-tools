@@ -80,7 +80,7 @@ bun run test                               # the calculator's parser and the wor
 
 - **The screen** (`app/`) is a Solid app on the Pocket Compact UI Kit: `CompactApp`'s status bar, scenes and hint bar, the `AppGrid` home, and one scene per tool in `app/applets/`. A tool is one row in `app/applets/index.ts` and one baked 24-unit SVG icon in `app/icons/`.
 - **The worker** (`app/worker.ts`). A PocketJS UI realm has no network. The app's worker owns the program's `http` node and performs each device API call (`http://zero/dev/<topic>`); the screen and the worker exchange 1 KiB records over two channels (`app/wire.ts`). `app/device.ts` turns them back into topics that poll while their scene is on top.
-- **The program** is pocketjs's CardputerZero program: the panel with a flush after every frame, the keyboard as buttons and text keys, the worker, and the device API in process (the IMU over IIO, power supply, `nmcli`, `bluetoothctl`, `arecord` with an FFT and a pitch detector, LIRC, `rpicam-vid`). **The camera's picture is the runtime's video plane: the program copies each decoded frame into the viewfinder's texture, so no frame crosses JavaScript.** Its README lists every route.
+- **The program** is pocketjs's CardputerZero program: the panel with a flush after every frame, the keyboard as buttons and text keys, the worker, and the device API in process (the IMU over IIO, power supply, `nmcli`, `bluetoothctl`, `arecord` with an FFT and a pitch detector, the speaker as one PipeWire stream through `pw-play`, LIRC, `rpicam-vid`, and zxing-cpp for QR codes). **The camera's picture is the runtime's video plane: the program copies each decoded frame into the viewfinder's texture, so no frame crosses JavaScript.** Its README lists every route.
 
 ## Design
 

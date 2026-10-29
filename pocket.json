@@ -4,7 +4,7 @@
   "id": "dev.pocket-nexus.zero-tools",
   "name": "pocket-zero-tools",
   "title": "Tools",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "engine": {
     "capabilities": {
       "requires": ["runtime.worker", "net.http", "text.glyphs.baked", "input.buttons", "input.text"]

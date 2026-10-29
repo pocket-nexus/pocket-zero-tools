@@ -47,7 +47,7 @@ if (builder.version !== manifest.version) throw new Error(`app-builder.json is $
 
 const NAME = builder.package_name;
 const VERSION = builder.version;
-const REVISION = "2";
+const REVISION = "1";
 const MAINTAINER = "Pocket Nexus <7312949+doodlewind@users.noreply.github.com>";
 const CONFIG = "programs/cardputer-zero/pocket.runtime-config.ts";
 const TARGET = "aarch64-unknown-linux-gnu";
@@ -145,7 +145,7 @@ Installed-Size: ${installedKiB}
 Section: APPLaunch
 Priority: optional
 Homepage: ${builder.store.source_repo}
-Recommends: rpicam-apps, alsa-utils, network-manager, bluez
+Recommends: rpicam-apps, alsa-utils, pipewire-bin, wireplumber, libzxing3, network-manager, bluez
 Description: ${builder.app_name} for the M5Stack CardputerZero
  ${builder.store.summary}
  .
