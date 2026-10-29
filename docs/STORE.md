@@ -1,5 +1,7 @@
 # Submitting Tools to the CardputerZero Store
 
+Tools is listed: 0.2.0-2 was merged in CardputerZero/packages#215 on 2026-10-29, and 0.2.1-1 merged by itself in #216.
+
 The Store takes a `.deb` and the listing in `app-builder.json`; `czdev publish` (or the upload on [dev.cardputer.cc](https://dev.cardputer.cc)) checks both and opens a pull request on [CardputerZero/packages](https://github.com/CardputerZero/packages). **A first listing is merged by a maintainer after a video of the app on a real device is posted in that pull request**; later versions merge by themselves once the checks pass.
 
 ## What is ready

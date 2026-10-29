@@ -46,7 +46,7 @@ One vocabulary on every screen (`docs/DESIGN.md`):
 
 ## Install
 
-**From the CardputerZero Store**, once the listing is approved: search for Tools or the share code `TOOL`.
+**From the CardputerZero Store**: search for Tools or the share code `TOOL`.
 
 **From a release:** copy `pocket-zero-tools_<version>-<revision>_arm64.deb` to the Zero and run `sudo dpkg -i pocket-zero-tools_*.deb`; APPLaunch lists Tools after it restarts. The package installs:
 
